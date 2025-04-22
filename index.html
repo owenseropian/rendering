@@ -1,0 +1,251 @@
+<script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
+<script>
+  /* global nn */
+  let im_w = nn.width
+  let im_h = nn.height
+  let v = [
+            [-0.5, -0.5, 0.5],
+            [0.5, -0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [-0.5, -0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [-0.5, 0.5, -0.5],
+            [0.5, 0.5, -0.5],
+        ]
+  let t = [
+            [0, 1, 2],
+            [2, 1, 3],
+            [5, 4, 7],
+            [7, 4, 6],
+            [4, 0, 6],
+            [6, 0, 2],
+            [1, 5, 3],
+            [3, 5, 7],
+            [2, 3, 6],
+            [6, 3, 7],
+            [4, 5, 0],
+            [0, 5, 1],
+        ]
+  
+  let vc = [
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+        ]
+  
+  function area_of_triangle(p1, p2, p3){
+    return (p1[1]*p2[0]+p2[1]*p3[0]+p3[1]*p1[0]-(p1[1]*p3[0]+p2[1]*p1[0]+p3[1]*p2[0]))/2
+  }
+  
+  function is_covered(triangle, x, y){
+    let coverage = 0
+    for (let i = 0; i < triangle.length; i++){
+      coverage += (area_of_triangle([y,x],triangle[(i+1)%3],triangle[(i+2)%3])/area_of_triangle(triangle[0], triangle[1], triangle[2]))
+    }
+    if (coverage > 1){
+      return false
+    }
+    return true
+  }
+  
+  function vector_multiply(A, B){
+    let temp = []
+    for (let j = 0; j < A.length; j++){
+        temp.push(0)
+        for (let k = 0; k < B.length; k++){
+            temp[j] += A[k] * B[j][k]
+        }
+    }
+    return temp
+  }
+  
+  function normalize(A){
+    let mag = 0
+    for (let x = 0; x < A.length; x++){
+        mag += A[x]*A[x]}
+    mag = Math.sqrt(mag)
+    let temp = []
+    for (let x = 0; x < A.length; x++){
+        temp.push(A[x]/mag)}
+    return temp
+  }
+  
+  function cross_product(a, b){
+    return [a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0]]
+  }
+  
+  function matrix_multiply(A, B){
+    let sol = []
+    for (let i = 0; i < A.length; i++){
+        let temp = []
+        for (let j = 0; j < A[0].length; j++){
+            temp.push(0)
+            for (let k = 0; k < B[0].length; k++){
+                temp[j] += A[i][k] * B[k][j]
+            }
+        }
+        sol.push(temp)
+    }
+    return sol
+  }
+  
+  function find_Mortho(l, r, b, t, f, n){
+    return [[2/(r-l), 0, 0, -(r+l)/(r-l)],
+                [0, 2/(t-b), 0, -(t+b)/(t-b)],
+                [0, 0, 2/(n-f), -(n+f)/(n-f)],
+                [0, 0, 0, 1]]
+  }
+  
+  function find_Mcam(e, g, t){
+    let w = normalize(g)
+    for (let i = 0; i < w.length; i++){
+        w[i] *= -1
+    }
+        
+    let u = normalize(cross_product(t,w))
+    let v = cross_product(w,u)
+    
+    let Mcam_1 = [[u[0], u[1], u[2], 0],
+                [v[0], v[1], v[2], 0],
+                [w[0], w[1], w[2], 0],
+                [0,0,0,1]]
+    let Mcam_2 = [[1, 0, 0, -1 * e[0]],
+                [0, 1, 0, -1 * e[1]],
+                [0, 0, 1, -1 * e[2]],
+                [0, 0, 0, 1]]
+        
+    return matrix_multiply(Mcam_1,Mcam_2)
+  }
+  
+  function render(vertices, triangles, vertex_colors, im_w, im_h){
+        
+    let img = new Array(im_h).fill(new Array(im_w).fill(new Array(3).fill(0)))
+    console.log(img)
+
+    let e = [1, 1, 1]
+    let g = []
+    for (let i = 0; i < e.length; i++){
+        g.push(e[i] * -1)
+    }
+    let t = [0, 1, 0]
+    
+    let Mcam = find_Mcam(e, g, t)
+    
+    let fovy = 65
+    let aspect = 4/3
+    let n = -1
+    let f = -100
+    
+    t = Math.tan((fovy/2)*(2*Math.PI/360)) * n
+    let b = -t
+    
+    let r = aspect * t
+    let l = -r
+    
+    let Mortho = find_Mortho(l, r, b, t, f, n)
+    //change to Mper
+    let P = [[n, 0, 0, 0],
+            [0, n, 0, 0],
+            [0, 0, (n+f), -f*n],
+            [0, 0, 1, 0]]
+    let Mper = matrix_multiply(Mortho, P)
+    
+    let Mvp =  [[im_w/2, 0, 0, im_w/2],
+            [0, im_h/2, 0, im_h/2],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]]
+    
+    let new_vertices = []
+    
+    for (let i = 0; i < vertices.length; i++){
+        new_vertices.push(vertices[i])
+        new_vertices[i].push(1)
+    }
+
+    for (let x = 0; x < new_vertices.length; x++){
+        new_vertices[x] = vector_multiply(new_vertices[x], Mcam)}
+        
+    for (let x = 0; x < new_vertices.length; x++){
+        new_vertices[x] = vector_multiply(new_vertices[x], Mper)}
+        
+    for (let x = 0; x < new_vertices.length; x++){
+        for (let i = 0; i < new_vertices[x].length; i++){
+            new_vertices[x][i] /= new_vertices[x][3]}
+    }
+        
+    for (let x = 0; x < new_vertices.length; x++){
+        new_vertices[x] = vector_multiply(new_vertices[x], Mvp)}
+        
+    for (let x = 0; x < new_vertices.length; x++){
+        new_vertices[x].pop()
+    }
+    let z_buffer = new Array(im_h).fill(new Array(im_w).fill(0))
+    
+    console.log(new_vertices)
+            
+    for (let i = 0; i < triangles.length; i++){
+        let triangle = []
+        let colors = []
+        let x_min = im_h
+        let y_min = im_w
+        let x_max = 0
+        let y_max = 0
+        for(let j = 0; j < triangles[i].length; j++){
+            let vertex = triangles[i][j]
+            triangle.push(new_vertices[vertex])
+            colors.push(vertex_colors[vertex])
+            x_min = Math.min(x_min, new_vertices[vertex][1])
+            y_min = Math.min(y_min, new_vertices[vertex][0])
+            x_max = Math.max(x_max, new_vertices[vertex][1])
+            y_max = Math.max(y_max, new_vertices[vertex][0])
+        }
+        x_min = Math.floor(Math.max(x_min, 0))
+        y_min = Math.floor(Math.max(y_min, 0))
+        x_max = Math.ceil(Math.min(x_max, im_h))
+        y_max = Math.ceil(Math.min(y_max, im_w))
+        let triangle_area = area_of_triangle(triangle[0],triangle[1],triangle[2])
+        console.log(triangle_area)
+        for (let x = x_min; x < x_max; x++){
+            for (let y = y_min; y < y_max; y++){
+                if(is_covered(triangle, x, y)){
+                    let color = 0
+                    let z = 0
+                    for (let j = 0; j < colors.length; j++){
+                        let coverage = area_of_triangle([y,x],triangle[(j+1)%3],triangle[(j+2)%3])/triangle_area
+                        color += coverage * colors[j]
+                        z += coverage * triangle[j][2]
+                      console.log(coverage)
+                    }
+                    if (z > z_buffer[x, y] || z_buffer[x, y] === 0){
+                        z_buffer[x][y] = z
+                        img[x][im_w-(y+1)] = color
+                    }
+                }
+            }
+        }
+    }
+          
+    return img
+  }
+  let img = render(v, t, vc, im_w, im_h)
+  for (let i = 0; i < img.length; i++){
+    for (let j = 0; j < img[i].length; j++){
+      for (let k = 0; k < img[i][j].length; k++){
+        if (img[i][j][k] !== 0){
+          console.log(img[i][j])
+        }
+      }
+    }
+  }
+  console.log("A")
+  
+  
+</script>
