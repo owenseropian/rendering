@@ -3,6 +3,9 @@
   rendering
   </title>
   <style>
+    body {
+      background-color: black;
+    }
     .pixel {
         position: absolute;
         z-index: 99;
@@ -18,7 +21,7 @@
   let im_w = nn.width
   let im_h = nn.height
   
-  let pixelated = 10
+  let pixelated = 2
   
   let v = [
             [-0.5, -0.5, 0.5],
@@ -267,14 +270,43 @@
     const nws2 = await fetch(forecastURL)
     const forecast = await nws2.json()
     
-    console.log(forecast)
+    let periods = []
+    for (let i = 0; i < 14; i++){
+      periods[i] = forecast.properties.periods[i].temperature
+    }
+    let max = periods[0]
+    for (let i = 1; i < periods.length; i++) {
+      if (periods[i] > max) {
+        max = periods[i]
+      }
+    }
+    for (let i = 0; i < 14; i++){
+      periods[i] /= max
+    }
+    console.log(periods)
+    vc = [
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+            [nn.random(periods), nn.random(periods), nn.random(periods)],
+        ]
     
     let e = [1, 1, 1]
     let img = render(v, t, vc, im_w, im_h, e)
 
     for (let x = 0; x < img.length; x++){
       for (let y = 0; y < img[x].length; y++){
-        if (img[x][y] !== [0, 0, 0]){
+        let black = true
+        for (let k = 0; k < img[x][y].length; k++){
+          if (img[x][y][k] !== 0){
+            black = false
+          }
+        }
+        if (!black){
           nn.create('div')
             .set({
                   class: 'pixel'
