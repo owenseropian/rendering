@@ -1,8 +1,25 @@
+<head>
+  <title>
+  rendering
+  </title>
+  <style>
+    .pixel {
+        position: absolute;
+        z-index: 99;
+        mix-blend-mode: normal
+      }
+
+  </style>
+</head>
+
 <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
 <script>
   /* global nn */
   let im_w = nn.width
   let im_h = nn.height
+  
+  let pixelated = 5
+  
   let v = [
             [-0.5, -0.5, 0.5],
             [0.5, -0.5, 0.5],
@@ -40,13 +57,13 @@
         ]
   
   function area_of_triangle(p1, p2, p3){
-    return (p1[1]*p2[0]+p2[1]*p3[0]+p3[1]*p1[0]-(p1[1]*p3[0]+p2[1]*p1[0]+p3[1]*p2[0]))/2
+    return (p1[0]*p2[1]+p2[0]*p3[1]+p3[0]*p1[1]-(p1[0]*p3[1]+p2[0]*p1[1]+p3[0]*p2[1]))/2
   }
   
   function is_covered(triangle, x, y){
     let coverage = 0
     for (let i = 0; i < triangle.length; i++){
-     coverage = (area_of_triangle([y,x],triangle[(i+1)%3],triangle[(i+2)%3])/area_of_triangle(triangle[0], triangle[1], triangle[2]))
+     coverage = (area_of_triangle([x,y],triangle[(i+1)%3],triangle[(i+2)%3])/area_of_triangle(triangle[0], triangle[1], triangle[2]))
       if (coverage < 0 || coverage > 1){return false}
     }
     return true
@@ -125,10 +142,21 @@
   
   function render(vertices, triangles, vertex_colors, im_w, im_h){
         
-    let img = new Array(im_h).fill(new Array(im_w).fill(new Array(3).fill(0)))
-    console.log(img)
+    im_w = Math.round(im_w / pixelated)
+    im_h = Math.round(im_h / pixelated)
+    
+    let img = []
+    let z_buffer = []
+    for (let x = 0; x < im_w; x++) {
+        img[x] = []
+        z_buffer[x] = []
+        for (let y = 0; y < im_h; y++) {
+            img[x][y] = [0, 0, 0]
+            z_buffer[x][y] = 0
+        }
+    }
 
-    let e = [1, 1, 1]
+    let e = [2, 2, 2]
     let g = []
     for (let i = 0; i < e.length; i++){
         g.push(e[i] * -1)
@@ -138,7 +166,7 @@
     let Mcam = find_Mcam(e, g, t)
     
     let fovy = 65
-    let aspect = 4/3
+    let aspect = im_w/im_h
     let n = -1
     let f = -100
     
@@ -156,8 +184,8 @@
             [0, 0, 1, 0]]
     let Mper = matrix_multiply(Mortho, P)
     
-    let Mvp =  [[im_w/2, 0, 0, im_w/2],
-            [0, im_h/2, 0, im_h/2],
+    let Mvp =  [[im_h/2, 0, 0, im_h/2],
+            [0, im_w/2, 0, im_w/2],
             [0, 0, 1, 0],
             [0, 0, 0, 1]]
     
@@ -185,7 +213,6 @@
     for (let x = 0; x < new_vertices.length; x++){
         new_vertices[x].pop()
     }
-    let z_buffer = new Array(im_h).fill(new Array(im_w).fill(0))
     
     console.log(new_vertices)
             
@@ -207,8 +234,9 @@
         }
         x_min = Math.floor(Math.max(x_min, 0))
         y_min = Math.floor(Math.max(y_min, 0))
-        x_max = Math.ceil(Math.min(x_max, im_h))
-        y_max = Math.ceil(Math.min(y_max, im_w))
+        x_max = Math.ceil(Math.min(x_max, im_w))
+        y_max = Math.ceil(Math.min(y_max, im_h))
+      console.log(x_max, x_min, y_max, y_min)
         let triangle_area = area_of_triangle(triangle[0],triangle[1],triangle[2])
         console.log(triangle_area)
         for (let x = x_min; x < x_max; x++){
@@ -217,14 +245,15 @@
                     let color = [0, 0, 0]
                     let z = 0
                     for (let j = 0; j < colors.length; j++){
-                        let coverage = area_of_triangle([y,x],triangle[(j+1)%3],triangle[(j+2)%3])/triangle_area
+                        let coverage = area_of_triangle([x,y],triangle[(j+1)%3],triangle[(j+2)%3])/triangle_area
                         for (let k = 0; k < colors[j].length; k++){
-                        color[k] += coverage * colors[j][k]}                      
+                        color[k] += coverage * colors[j][k]}  
                         z += coverage * triangle[j][2]
                     }
                     if (z > z_buffer[x][y] || z_buffer[x][y] === 0){
                         z_buffer[x][y] = z
                         img[x][y] = color
+                      console.log(x, y)
                     }
                 }
             }
@@ -233,26 +262,32 @@
           
     return img
   }
-  let img = render(v, t, vc, im_w, im_h)
-  console.log("A")
-  
-  for (let x = 0; x < img.length; x++){
-    for (let y = 0; y < img[x].length; y++){
-      console.log
-      nn.create('div')
-        .css({
-          position: "absolute",
-          left: `${x}px`,
-          top: `${y}px`,
-          width: `1px`,
-          height: `1px`,
-          backgroundColor: `rgb(${img[x][y][0]}, ${img[x][y][1]}, ${img[x][y][2]})`
-        })
-        .addTo('body')
-    }
-  }
-  console.log("B")
+  function setup(){
+    let img = render(v, t, vc, im_w, im_h)
+    console.log("A")
 
+    for (let x = 0; x < img.length; x++){
+      for (let y = 0; y < img[x].length; y++){
+        nn.create('div')
+          .set({
+                class: 'pixel'
+              })
+          .css({
+            position: "absolute",
+            left: `${x*pixelated}px`,
+            top: `${y*pixelated}px`,
+            width: `${pixelated}px`,
+            height: `${pixelated}px`,
+            backgroundColor: `rgb(${img[x][y].map(c => c * 255).join(',')})`
+          })
+          .addTo('body')
+      }
+    }
+    console.log("B")
+  }
+
+  
+  nn.on("load", setup)
   
   
 </script>
