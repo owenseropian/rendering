@@ -46,10 +46,8 @@
   function is_covered(triangle, x, y){
     let coverage = 0
     for (let i = 0; i < triangle.length; i++){
-      coverage += (area_of_triangle([y,x],triangle[(i+1)%3],triangle[(i+2)%3])/area_of_triangle(triangle[0], triangle[1], triangle[2]))
-    }
-    if (coverage > 1){
-      return false
+     coverage = (area_of_triangle([y,x],triangle[(i+1)%3],triangle[(i+2)%3])/area_of_triangle(triangle[0], triangle[1], triangle[2]))
+      if (coverage < 0 || coverage > 1){return false}
     }
     return true
   }
@@ -216,17 +214,17 @@
         for (let x = x_min; x < x_max; x++){
             for (let y = y_min; y < y_max; y++){
                 if(is_covered(triangle, x, y)){
-                    let color = 0
+                    let color = [0, 0, 0]
                     let z = 0
                     for (let j = 0; j < colors.length; j++){
                         let coverage = area_of_triangle([y,x],triangle[(j+1)%3],triangle[(j+2)%3])/triangle_area
-                        color += coverage * colors[j]
+                        for (let k = 0; k < colors[j].length; k++){
+                        color[k] += coverage * colors[j][k]}                      
                         z += coverage * triangle[j][2]
-                      console.log(coverage)
                     }
-                    if (z > z_buffer[x, y] || z_buffer[x, y] === 0){
+                    if (z > z_buffer[x][y] || z_buffer[x][y] === 0){
                         z_buffer[x][y] = z
-                        img[x][im_w-(y+1)] = color
+                        img[x][y] = color
                     }
                 }
             }
@@ -236,16 +234,25 @@
     return img
   }
   let img = render(v, t, vc, im_w, im_h)
-  for (let i = 0; i < img.length; i++){
-    for (let j = 0; j < img[i].length; j++){
-      for (let k = 0; k < img[i][j].length; k++){
-        if (img[i][j][k] !== 0){
-          console.log(img[i][j])
-        }
-      }
+  console.log("A")
+  
+  for (let x = 0; x < img.length; x++){
+    for (let y = 0; y < img[x].length; y++){
+      console.log
+      nn.create('div')
+        .css({
+          position: "absolute",
+          left: `${x}px`,
+          top: `${y}px`,
+          width: `1px`,
+          height: `1px`,
+          backgroundColor: `rgb(${img[x][y][0]}, ${img[x][y][1]}, ${img[x][y][2]})`
+        })
+        .addTo('body')
     }
   }
-  console.log("A")
+  console.log("B")
+
   
   
 </script>
