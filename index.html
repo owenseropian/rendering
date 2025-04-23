@@ -152,11 +152,11 @@
         z_buffer[x] = []
         for (let y = 0; y < im_h; y++) {
             img[x][y] = [0, 0, 0]
-            z_buffer[x][y] = 0
+            z_buffer[x][y] = -Infinity
         }
     }
 
-    let e = [2, 2, 2]
+    let e = [1, 1, 1]
     let g = []
     for (let i = 0; i < e.length; i++){
         g.push(e[i] * -1)
@@ -166,7 +166,7 @@
     let Mcam = find_Mcam(e, g, t)
     
     let fovy = 65
-    let aspect = im_w/im_h
+    let aspect = im_h/im_w
     let n = -1
     let f = -100
     
@@ -227,10 +227,10 @@
             let vertex = triangles[i][j]
             triangle.push(new_vertices[vertex])
             colors.push(vertex_colors[vertex])
-            x_min = Math.min(x_min, new_vertices[vertex][1])
-            y_min = Math.min(y_min, new_vertices[vertex][0])
-            x_max = Math.max(x_max, new_vertices[vertex][1])
-            y_max = Math.max(y_max, new_vertices[vertex][0])
+            x_min = Math.min(x_min, new_vertices[vertex][0])
+            y_min = Math.min(y_min, new_vertices[vertex][1])
+            x_max = Math.max(x_max, new_vertices[vertex][0])
+            y_max = Math.max(y_max, new_vertices[vertex][1])
         }
         x_min = Math.floor(Math.max(x_min, 0))
         y_min = Math.floor(Math.max(y_min, 0))
@@ -250,7 +250,7 @@
                         color[k] += coverage * colors[j][k]}  
                         z += coverage * triangle[j][2]
                     }
-                    if (z > z_buffer[x][y] || z_buffer[x][y] === 0){
+                    if (z > z_buffer[x][y]){
                         z_buffer[x][y] = z
                         img[x][y] = color
                       console.log(x, y)
@@ -268,19 +268,22 @@
 
     for (let x = 0; x < img.length; x++){
       for (let y = 0; y < img[x].length; y++){
-        nn.create('div')
-          .set({
-                class: 'pixel'
-              })
-          .css({
-            position: "absolute",
-            left: `${x*pixelated}px`,
-            top: `${y*pixelated}px`,
-            width: `${pixelated}px`,
-            height: `${pixelated}px`,
-            backgroundColor: `rgb(${img[x][y].map(c => c * 255).join(',')})`
-          })
-          .addTo('body')
+        if (img[x][y] !== [0, 0, 0]){
+          console.log(img[x][y])
+          nn.create('div')
+            .set({
+                  class: 'pixel'
+                })
+            .css({
+              position: "absolute",
+              left: `${x*pixelated}px`,
+              top: `${y*pixelated}px`,
+              width: `${pixelated}px`,
+              height: `${pixelated}px`,
+              backgroundColor: `rgb(${img[x][y].map(c => c * 255).join(',')})`
+            })
+            .addTo('body')
+        }
       }
     }
     console.log("B")
