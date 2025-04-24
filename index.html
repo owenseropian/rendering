@@ -21,10 +21,15 @@
   let im_w = nn.width
   let im_h = nn.height
   
+  //if cube is not loading change this to false
+  let weather = false
   //if set too low (below 5) it will lag and maybe crash
-  let pixelated = 10
-  //set outlines to -1 to get none (0.01 - 0.03 best outlines)
+  let pixelated = 9
+  //set outlines to -1 to get none (0.03 - 0.1 best outlines)
   let outlines = 0.1
+  //distance away from cube
+  let distance = 1
+  let fovy = 65
   
   let white = [1, 1, 1]
   let black = [0.01, 0.01, 0.01]
@@ -65,7 +70,7 @@
             [1.0, 1.0, 0.0],
         ]
   
-  let e = [1, 1, 1]
+  let e = [distance, distance, distance]
   
   function area_of_triangle(p1, p2, p3){
     return (p1[0]*p2[1]+p2[0]*p3[1]+p3[0]*p1[1]-(p1[0]*p3[1]+p2[0]*p1[1]+p3[0]*p2[1]))/2
@@ -150,7 +155,7 @@
     return matrix_multiply(Mcam_1,Mcam_2)
   }
   
-  function render(vertices, triangles, vertex_colors, im_w, im_h, e){
+  function render(vertices, triangles, vertex_colors, im_w, im_h, e, fovy){
         
     im_w = Math.round(im_w / pixelated)
     im_h = Math.round(im_h / pixelated)
@@ -174,7 +179,6 @@
     
     let Mcam = find_Mcam(e, g, t)
     
-    let fovy = 65
     let aspect = im_w/im_h
     let n = -1
     let f = -100
@@ -327,7 +331,12 @@
   
   async function setup(){
     
-    const gps = await nn.askForGPS()
+    // navigator.geolocation.getCurrentPosition((e) => {
+    //   console.log(e.coords.latitude)
+    // })
+    
+    
+    if(weather){const gps = await nn.askForGPS()
     
     const pointURL = `https://api.weather.gov/points/${gps.lat},${gps.lng}`
     const nws1 = await fetch(pointURL)
@@ -359,9 +368,9 @@
             [nn.random(periods), nn.random(periods), nn.random(periods)],
             [nn.random(periods), nn.random(periods), nn.random(periods)],
             [nn.random(periods), nn.random(periods), nn.random(periods)],
-        ]
+        ]}
     
-    let img = render(v, t, vc, im_w, im_h, e)
+    let img = render(v, t, vc, im_w, im_h, e, fovy)
     draw(img)
   }
 
@@ -400,7 +409,7 @@
       ]
       let rotate = matrix_multiply(rotateX, rotateY)
       e = vector_multiply(e, rotate)
-      let img = render(v, t, vc, im_w, im_h, e)
+      let img = render(v, t, vc, im_w, im_h, e, fovy)
       deleteAll()
       draw(img)
       startX = nn.mouseX
@@ -408,9 +417,18 @@
     }
   })
   
-  // nn.on("mousewheel", (e) => {
+  nn.on("mousewheel", (f) => {
+    if(f.deltaY > 0){
+      fovy -= 1
+    }
+    else if (f.deltaY < 0){
+      fovy += 1
+    }
     
-  // })
+    let img = render(v, t, vc, im_w, im_h, e, fovy)
+    deleteAll()
+    draw(img)
+  })
   
   
 </script>
