@@ -21,7 +21,10 @@
   let im_w = nn.width
   let im_h = nn.height
   
-  let pixelated = 5
+  let pixelated = 10
+  
+  let white = [1, 1, 1]
+  let black = [0.01, 0.01, 0.01]
   
   let v = [
             [-0.5, -0.5, 0.5],
@@ -218,12 +221,16 @@
         new_vertices[x].pop()
     }
     
+    let total_x_min = im_w
+    let total_x_max = 0
+    let total_y_min = im_h
+    let total_y_max = 0
             
     for (let i = 0; i < triangles.length; i++){
         let triangle = []
         let colors = []
-        let x_min = im_h
-        let y_min = im_w
+        let x_min = im_w
+        let y_min = im_h
         let x_max = 0
         let y_max = 0
         for(let j = 0; j < triangles[i].length; j++){
@@ -239,6 +246,10 @@
         y_min = Math.floor(Math.max(y_min, 0))
         x_max = Math.ceil(Math.min(x_max, im_w))
         y_max = Math.ceil(Math.min(y_max, im_h))
+        total_x_min = Math.min(x_min, total_x_min)
+        total_x_max = Math.max(x_max, total_x_max)
+        total_y_min = Math.min(y_min, total_y_min)
+        total_y_max = Math.max(y_max, total_y_max)
         let triangle_area = area_of_triangle(triangle[0],triangle[1],triangle[2])
         for (let x = x_min; x < x_max; x++){
             for (let y = y_min; y < y_max; y++){
@@ -259,6 +270,15 @@
             }
         }
     }
+      for (let x = total_x_min; x < total_x_max; x++){
+          for (let y = total_y_min; y < total_y_max; y++){
+            for (let k = 0; k < 4; k++){
+              if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
+                img[x][y] = white
+              }
+            }
+          }
+        }
           
     return img
   }
