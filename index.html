@@ -22,9 +22,9 @@
   let im_h = nn.height
   
   //if cube is not loading change this to false
-  let weather = false
+  let weather = true
   //if set too low (below 5) it will lag and maybe crash
-  let pixelated = 9
+  let pixelated = 10
   //set outlines to -1 to get none (0.03 - 0.1 best outlines)
   let outlines = 0.1
   //distance away from cube
@@ -71,6 +71,29 @@
         ]
   
   let e = [distance, distance, distance]
+  
+  
+  const createSlider = function(min, max, start, step, num, func){
+    nn.create('input')
+      .set({
+        type: 'range',
+        min: min,
+        max: max,
+        value: start,
+        step: step
+      })
+      .addTo('body')
+      .on('input', (e) => {func(e)})
+      .css({
+        position: "absolute",
+        left: 10,
+        bottom: 10 + 20 * num,
+        width: nn.width - 20,
+        zIndex: 999999999999999999
+
+    })
+  }
+  
   
   function area_of_triangle(p1, p2, p3){
     return (p1[0]*p2[1]+p2[0]*p3[1]+p3[0]*p1[1]-(p1[0]*p3[1]+p2[0]*p1[1]+p3[0]*p2[1]))/2
@@ -329,6 +352,12 @@
     })
   }
   
+  function redraw(){
+    let img = render(v, t, vc, im_w, im_h, e, fovy)
+    deleteAll()
+    draw(img)
+  }
+  
   async function setup(){
     
     // navigator.geolocation.getCurrentPosition((e) => {
@@ -372,6 +401,11 @@
     
     let img = render(v, t, vc, im_w, im_h, e, fovy)
     draw(img)
+    
+    createSlider(10, 50, pixelated, 1, 0, (e) => {
+    pixelated = Number(e.target.value)
+    redraw()
+  })
   }
 
   
@@ -409,9 +443,7 @@
       ]
       let rotate = matrix_multiply(rotateX, rotateY)
       e = vector_multiply(e, rotate)
-      let img = render(v, t, vc, im_w, im_h, e, fovy)
-      deleteAll()
-      draw(img)
+      redraw()
       startX = nn.mouseX
       startY = nn.mouseY
     }
@@ -425,9 +457,7 @@
       fovy += 1
     }
     
-    let img = render(v, t, vc, im_w, im_h, e, fovy)
-    deleteAll()
-    draw(img)
+    redraw()
   })
   
   
