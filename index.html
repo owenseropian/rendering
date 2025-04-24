@@ -59,7 +59,7 @@
             [1.0, 1.0, 0.0],
         ]
   
-  let e = [2, 2, 2]
+  let e = [1, 1, 1]
   
   function area_of_triangle(p1, p2, p3){
     return (p1[0]*p2[1]+p2[0]*p3[1]+p3[0]*p1[1]-(p1[0]*p3[1]+p2[0]*p1[1]+p3[0]*p2[1]))/2
@@ -358,17 +358,17 @@
     if (dragging){
       const diffX = nn.mouseX - startX
       const diffY = nn.mouseY - startY
-      let angleX = diffX * (2*Math.PI/360) / 100
-      let angleY = diffY * (2*Math.PI/360) / 100
-      let rotateX = [
-        [1, 0, 0],
-        [0, Math.cos(angleX), -Math.sin(angleX)],
-        [0, Math.sin(angleX), Math.cos(angleX)],
-      ]
+      let angleX = diffX * (2*Math.PI/360) / 5
+      let angleY = diffY * (2*Math.PI/360) / 5
       let rotateY = [
-        [Math.cos(angleY), 0, Math.sin(angleY)],
+        [1, 0, 0],
+        [0, Math.cos(angleY), -Math.sin(angleY)],
+        [0, Math.sin(angleY), Math.cos(angleY)],
+      ]
+      let rotateX = [
+        [Math.cos(angleX), 0, Math.sin(angleX)],
         [0, 1, 0],
-        [-Math.sin(angleY), 0, Math.cos(angleY)],
+        [-Math.sin(angleX), 0, Math.cos(angleX)],
       ]
       let rotate = matrix_multiply(rotateX, rotateY)
       e = vector_multiply(e, rotate)
@@ -376,8 +376,14 @@
       let img = render(v, t, vc, im_w, im_h, e)
       deleteAll()
       draw(img)
+      startX = nn.mouseX
+      startY = nn.mouseY
     }
   })
+  
+  // nn.on("mousewheel", (e) => {
+    
+  // })
   
   
 </script>
