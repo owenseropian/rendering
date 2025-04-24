@@ -400,7 +400,6 @@
       ]
       let rotate = matrix_multiply(rotateX, rotateY)
       e = vector_multiply(e, rotate)
-      console.log(e)
       let img = render(v, t, vc, im_w, im_h, e)
       deleteAll()
       draw(img)
