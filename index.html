@@ -21,7 +21,10 @@
   let im_w = nn.width
   let im_h = nn.height
   
+  //if set too low (below 5) it will lag and maybe crash
   let pixelated = 10
+  //set outlines to -1 to get none (0.01 - 0.03 best outlines)
+  let outlines = 0.1
   
   let white = [1, 1, 1]
   let black = [0.01, 0.01, 0.01]
@@ -256,11 +259,16 @@
                 if(is_covered(triangle, x, y)){
                     let color = [0, 0, 0]
                     let z = 0
+                    let min_coverage = 1
                     for (let j = 0; j < colors.length; j++){
                         let coverage = area_of_triangle([x,y],triangle[(j+1)%3],triangle[(j+2)%3])/triangle_area
                         for (let k = 0; k < colors[j].length; k++){
                         color[k] += coverage * colors[j][k]}  
                         z += coverage * triangle[j][2]
+                        min_coverage = Math.min(min_coverage, coverage)
+                    }
+                    if (min_coverage < outlines){
+                      color = white
                     }
                     if (z > z_buffer[x][y]){
                         z_buffer[x][y] = z
@@ -270,15 +278,15 @@
             }
         }
     }
-      for (let x = total_x_min; x < total_x_max; x++){
-          for (let y = total_y_min; y < total_y_max; y++){
-            for (let k = 0; k < 4; k++){
-              if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
-                img[x][y] = white
-              }
-            }
-          }
-        }
+      // for (let x = total_x_min; x < total_x_max; x++){
+      //     for (let y = total_y_min; y < total_y_max; y++){
+      //       for (let k = 0; k < 4; k++){
+      //         if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
+      //           img[x][y] = white
+      //         }
+      //       }
+      //     }
+      //   }
           
     return img
   }
