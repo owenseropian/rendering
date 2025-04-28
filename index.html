@@ -406,6 +406,19 @@
     pixelated = Number(e.target.value)
     redraw()
   })
+    rotate()
+  }
+  
+  function rotate() {
+    requestAnimationFrame(rotate)
+    let angle = 0.25 * (2*Math.PI/360)
+    let rotateX = [
+        [Math.cos(angle), 0, Math.sin(angle)],
+        [0, 1, 0],
+        [-Math.sin(angle), 0, Math.cos(angle)],
+      ]
+    e = vector_multiply(e, rotateX)
+    redraw()
   }
 
   
