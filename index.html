@@ -15,16 +15,24 @@
   </style>
 </head>
 
+<canvas id="myCanvas" width="1000" height="1000"></canvas>
+
 <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
 <script>
   /* global nn */
+  
+  const canvas = document.getElementById('myCanvas')
+  canvas.width = nn.width
+  canvas.height = nn.height
+  const ctx = canvas.getContext('2d')
+  
   let im_w = nn.width
   let im_h = nn.height
   
   //if cube is not loading change this to false
   let weather = true
   //if set too low (below 5) it will lag and maybe crash
-  let pixelated = 10
+  let pixelated = 3
   //set outlines to -1 to get none (0.03 - 0.1 best outlines)
   let outlines = 0.1
   //distance away from cube
@@ -294,9 +302,9 @@
                         z += coverage * triangle[j][2]
                         min_coverage = Math.min(min_coverage, coverage)
                     }
-                    if (min_coverage < outlines){
-                      color = white
-                    }
+                    // if (min_coverage < outlines){
+                    //   color = white
+                    // }
                     if (z > z_buffer[x][y]){
                         z_buffer[x][y] = z
                         img[x][y] = color
@@ -305,15 +313,15 @@
             }
         }
     }
-      // for (let x = total_x_min; x < total_x_max; x++){
-      //     for (let y = total_y_min; y < total_y_max; y++){
-      //       for (let k = 0; k < 4; k++){
-      //         if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
-      //           img[x][y] = white
-      //         }
-      //       }
-      //     }
-      //   }
+      for (let x = total_x_min; x < total_x_max; x++){
+          for (let y = total_y_min; y < total_y_max; y++){
+            for (let k = 0; k < 4; k++){
+              if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
+                img[x][y] = white
+              }
+            }
+          }
+        }
           
     return img
   }
@@ -328,28 +336,15 @@
           }
         }
         if (!black){
-          nn.create('div')
-            .set({
-                  class: 'pixel'
-                })
-            .css({
-              position: "absolute",
-              left: `${x*pixelated}px`,
-              top: `${y*pixelated}px`,
-              width: `${pixelated}px`,
-              height: `${pixelated}px`,
-              backgroundColor: `rgb(${img[x][y].map(c => c * 255).join(',')})`
-            })
-            .addTo('body')
+          ctx.fillStyle = `rgb(${img[x][y].map(c => c * 255).join(',')})`
+          ctx.fillRect(x*pixelated, y*pixelated, pixelated, pixelated)
         }
       }
     }
   }
   
   function deleteAll(){
-    nn.getAll('div').forEach((pixel) => {
-      pixel.remove()
-    })
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
   
   function redraw(){
@@ -414,7 +409,7 @@
     let img = render(v, t, vc, im_w, im_h, e, fovy)
     draw(img)
     
-    createSlider(10, 50, pixelated, 1, 0, (e) => {
+    createSlider(1, 50, pixelated, 1, 0, (e) => {
     pixelated = Number(e.target.value)
     redraw()
   })
