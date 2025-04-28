@@ -21,6 +21,12 @@
 <script>
   /* global nn */
   
+  function shape(vertices, triangles, vertex_colors) {
+    this.vertices = vertices
+    this.triangles = triangles
+    this.vertex_colors = vertex_colors
+  }
+  
   const canvas = document.getElementById('myCanvas')
   canvas.width = nn.width
   canvas.height = nn.height
@@ -32,7 +38,7 @@
   //if cube is not loading change this to false
   let weather = true
   //if set too low (below 5) it will lag and maybe crash
-  let pixelated = 3
+  let pixelated = 5
   //set outlines to -1 to get none (0.03 - 0.1 best outlines)
   let outlines = 0.1
   //distance away from cube
@@ -42,18 +48,16 @@
   let white = [1, 1, 1]
   let black = [0.01, 0.01, 0.01]
   
-  let v = [
-            [-0.5, -0.5, 0.5],
+  let cube1 = new shape(
+           [[-0.5, -0.5, 0.5],
             [0.5, -0.5, 0.5],
             [-0.5, 0.5, 0.5],
             [0.5, 0.5, 0.5],
             [-0.5, -0.5, -0.5],
             [0.5, -0.5, -0.5],
             [-0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-        ]
-  let t = [
-            [0, 1, 2],
+            [0.5, 0.5, -0.5]],
+           [[0, 1, 2],
             [2, 1, 3],
             [5, 4, 7],
             [7, 4, 6],
@@ -64,19 +68,16 @@
             [2, 3, 6],
             [6, 3, 7],
             [4, 5, 0],
-            [0, 5, 1],
-        ]
-  
-  let vc = [
-            [1.0, 0.0, 0.0],
+            [0, 5, 1]],
+           [[1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0],
             [0.0, 0.0, 1.0],
             [1.0, 1.0, 0.0],
-            [1.0, 1.0, 0.0],
-        ]
+            [1.0, 1.0, 0.0]]
+  )
   
   let e = [distance, distance, distance]
   
@@ -186,7 +187,7 @@
     return matrix_multiply(Mcam_1,Mcam_2)
   }
   
-  function render(vertices, triangles, vertex_colors, im_w, im_h, e, fovy){
+  function render(shape, im_w, im_h, e, fovy){
         
     im_w = Math.round(im_w / pixelated)
     im_h = Math.round(im_h / pixelated)
@@ -235,8 +236,8 @@
     
     let new_vertices = []
     
-    for (let i = 0; i < vertices.length; i++){
-        new_vertices.push(vertices[i])
+    for (let i = 0; i < shape.vertices.length; i++){
+        new_vertices.push(shape.vertices[i])
         if (new_vertices[i].length < 4){
           new_vertices[i].push(1)}
     }
@@ -264,17 +265,17 @@
     let total_y_min = im_h
     let total_y_max = 0
             
-    for (let i = 0; i < triangles.length; i++){
+    for (let i = 0; i < shape.triangles.length; i++){
         let triangle = []
         let colors = []
         let x_min = im_w
         let y_min = im_h
         let x_max = 0
         let y_max = 0
-        for(let j = 0; j < triangles[i].length; j++){
-            let vertex = triangles[i][j]
+        for(let j = 0; j < shape.triangles[i].length; j++){
+            let vertex = shape.triangles[i][j]
             triangle.push(new_vertices[vertex])
-            colors.push(vertex_colors[vertex])
+            colors.push(shape.vertex_colors[vertex])
             x_min = Math.min(x_min, new_vertices[vertex][0])
             y_min = Math.min(y_min, new_vertices[vertex][1])
             x_max = Math.max(x_max, new_vertices[vertex][0])
@@ -302,6 +303,7 @@
                         z += coverage * triangle[j][2]
                         min_coverage = Math.min(min_coverage, coverage)
                     }
+                    //Outline Triangles
                     // if (min_coverage < outlines){
                     //   color = white
                     // }
@@ -313,15 +315,16 @@
             }
         }
     }
-      for (let x = total_x_min; x < total_x_max; x++){
-          for (let y = total_y_min; y < total_y_max; y++){
-            for (let k = 0; k < 4; k++){
-              if ((z_buffer[x][y] - 100) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
-                img[x][y] = white
-              }
-            }
+    //Outline outer edges
+    for (let x = total_x_min; x < total_x_max; x++){
+      for (let y = total_y_min; y < total_y_max; y++){
+        for (let k = 0; k < 4; k++){
+          if ((z_buffer[x][y] - 1) > z_buffer[x + k%2 * Math.pow(-1, Math.floor(k/2))][y + (k+1)%2 * Math.pow(-1, Math.floor(k/2))]){
+            img[x][y] = white
           }
         }
+      }
+    }
           
     return img
   }
@@ -348,14 +351,14 @@
   }
   
   function redraw(){
-    let img = render(v, t, vc, im_w, im_h, e, fovy)
+    let img = render(cube1, im_w, im_h, e, fovy)
     deleteAll()
     draw(img)
   }
   
   function rotate() {
     requestAnimationFrame(rotate)
-    let angle = 0.5 * (2*Math.PI/360)
+    let angle = 0.1 * (2*Math.PI/360)
     let rotateX = [
         [Math.cos(angle), 0, Math.sin(angle)],
         [0, 1, 0],
@@ -395,7 +398,7 @@
       periods[i] /= max
     }
     console.log(forecast)
-    vc = [
+    cube1.vertex_colors = [
             [nn.random(periods), nn.random(periods), nn.random(periods)],
             [nn.random(periods), nn.random(periods), nn.random(periods)],
             [nn.random(periods), nn.random(periods), nn.random(periods)],
@@ -406,7 +409,7 @@
             [nn.random(periods), nn.random(periods), nn.random(periods)],
         ]}
     
-    let img = render(v, t, vc, im_w, im_h, e, fovy)
+    let img = render(cube1, im_w, im_h, e, fovy)
     draw(img)
     
     createSlider(1, 50, pixelated, 1, 0, (e) => {
