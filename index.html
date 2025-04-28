@@ -89,7 +89,7 @@
         left: 10,
         bottom: 10 + 20 * num,
         width: nn.width - 20,
-        zIndex: 999999999999999999
+        zIndex: 999999999999999999999999
 
     })
   }
@@ -358,6 +358,18 @@
     draw(img)
   }
   
+  function rotate() {
+    requestAnimationFrame(rotate)
+    let angle = 0.5 * (2*Math.PI/360)
+    let rotateX = [
+        [Math.cos(angle), 0, Math.sin(angle)],
+        [0, 1, 0],
+        [-Math.sin(angle), 0, Math.cos(angle)],
+      ]
+    e = vector_multiply(e, rotateX)
+    redraw()
+  }
+  
   async function setup(){
     
     // navigator.geolocation.getCurrentPosition((e) => {
@@ -409,17 +421,7 @@
     rotate()
   }
   
-  function rotate() {
-    requestAnimationFrame(rotate)
-    let angle = 0.25 * (2*Math.PI/360)
-    let rotateX = [
-        [Math.cos(angle), 0, Math.sin(angle)],
-        [0, 1, 0],
-        [-Math.sin(angle), 0, Math.cos(angle)],
-      ]
-    e = vector_multiply(e, rotateX)
-    redraw()
-  }
+
 
   
   nn.on("load", setup)
